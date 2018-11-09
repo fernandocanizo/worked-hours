@@ -11,7 +11,7 @@ const DAY_CODES = [
   'holiday',
   'sickness',
 ];
-const minutesInWorkDay = 9 * 60;
+const minutesInWorkingDay = 540; // 9 hours a day * 60 minutes
 
 // Global variables
 let _input = '';
@@ -44,7 +44,6 @@ const parseHour = token => {
 };
 
 const parseFields = line => {
-  const baseMinutes = 540; // 9 hours a day * 60 minutes
   const [ date, startHour, endHour, code, notes ] = line.split(';').map(v => v.trim());
 
   const lineData = {
@@ -62,17 +61,59 @@ const parseFields = line => {
     date,
     startHour: lineData.startHour,
     endHour: lineData.endHour,
+    code: lineData.code,
     workedMinutes,
-    extraMinutes: workedMinutes - baseMinutes,
+    extraMinutes: workedMinutes - minutesInWorkingDay,
   };
 
   return result;
 };
 
+// TODO make unit test for all cases to this function
+// TODO maybe this process should be run on parseFields, so we can better decide if we substract or not
+
+const tellMeWhatToAdd = (code, minutes) => {
+  // determines according to `code` if these `minutes` should be added or
+  // substracted and returns the appropriate value for `buildChartJsData`
+  // to add up
+
+  // First check for extra hours on non-working days
+  const nonWorkableDays = [
+    'non-working-day',
+    'holiday',
+  ];
+  if (nonWorkableDays.includes(code)) {
+    if (minutes > 0) {
+      return minutes;
+    } else {
+      return 0; // we don't substract negative minutes from non-working days
+    }
+  }
+
+  if ('from-home' === code) {
+    if (minutes > 0) {
+      return minutes;
+    } else { // were incorrectly deducted, revert `workedMinutes - minutesInWorkingDay`
+      return minutes + minutesInWorkingDay;
+    }
+  }
+
+  if ('boss-license' === code) {
+    if (minutes > 0) {
+      return minutes;
+    } else {
+      return 0; // boss gave order to leave earlier, so we don't count negative time
+    }
+  }
+
+  // default
+  return minutes;
+};
+
 const buildChartJsData = (acumulator, value) => {
   acumulator.workedMinutes.push(value.workedMinutes);
   acumulator.extraMinutes.push(value.extraMinutes);
-  acumulator.totalExtraMinutes += value.extraMinutes;
+  acumulator.totalExtraMinutes += tellMeWhatToAdd(value.code, value.extraMinutes);
   return acumulator;
 };
 
