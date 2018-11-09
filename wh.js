@@ -2,6 +2,9 @@
 
 'use strict';
 
+const fs = require('fs');
+
+
 const MAX_FIELDS = 5;
 const DAY_CODES = [
   'non-working-day',
@@ -41,6 +44,7 @@ const parseHour = token => {
 };
 
 const parseFields = line => {
+  const baseMinutes = 540; // 9 hours a day * 60 minutes
   const [ date, startHour, endHour, code, notes ] = line.split(';').map(v => v.trim());
 
   const lineData = {
@@ -51,19 +55,36 @@ const parseFields = line => {
     notes,
   };
 
-  console.log('line:', line);
-  console.log(lineData);
-  console.log('Worked hours:', (lineData.endHour - lineData.startHour) / 60);
-  console.log();
+  let workedMinutes = lineData.endHour - lineData.startHour;
+  workedMinutes = workedMinutes ? workedMinutes : 0;
+
+  const result = {
+    date,
+    startHour: lineData.startHour,
+    endHour: lineData.endHour,
+    workedMinutes,
+    extraMinutes: workedMinutes - baseMinutes,
+  };
+
+  return result;
+};
+
+const buildChartJsData = (acumulator, value) => {
+  a.workedMinutes.push(v.workedMinutes);
+  a.extraMinutes.push(v.extraMinutes);
+  return a;
 };
 
 const main = lines => {
   // drop first line, those are headers
   lines.shift();
   try {
-    lines.forEach(parseFields);
+    const result = lines.map(parseFields)
+      .reduce(buildChartJsData, { workedMinutes: [], extraMinutes: [] });
+
+    const stdOut = 1;
+    fs.writeFileSync(stdOut, JSON.stringify(result), { encoding: 'utf8', flag: 'a' })
   } catch (e) {
     console.log(e);
   }
 };
-
