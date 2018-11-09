@@ -70,9 +70,9 @@ const parseFields = line => {
 };
 
 const buildChartJsData = (acumulator, value) => {
-  a.workedMinutes.push(v.workedMinutes);
-  a.extraMinutes.push(v.extraMinutes);
-  return a;
+  acumulator.workedMinutes.push(value.workedMinutes);
+  acumulator.extraMinutes.push(value.extraMinutes);
+  return acumulator;
 };
 
 const main = lines => {
