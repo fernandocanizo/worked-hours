@@ -72,6 +72,7 @@ const parseFields = line => {
 const buildChartJsData = (acumulator, value) => {
   acumulator.workedMinutes.push(value.workedMinutes);
   acumulator.extraMinutes.push(value.extraMinutes);
+  acumulator.totalExtraMinutes += value.extraMinutes;
   return acumulator;
 };
 
@@ -80,7 +81,11 @@ const main = lines => {
   lines.shift();
   try {
     const result = lines.map(parseFields)
-      .reduce(buildChartJsData, { workedMinutes: [], extraMinutes: [] });
+      .reduce(buildChartJsData, {
+        workedMinutes: [],
+        extraMinutes: [],
+        totalExtraMinutes: 0,
+      });
 
     const stdOut = 1;
     fs.writeFileSync(stdOut, JSON.stringify(result), { encoding: 'utf8', flag: 'a' })
